@@ -5,17 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>M3 File Explorer</title>
     <!-- Google Fonts (Comfortaa) and Material Symbols -->
-    <link rel="preconnect" href="[https://fonts.googleapis.com](https://fonts.googleapis.com)">
-    <link rel="preconnect" href="[https://fonts.gstatic.com](https://fonts.gstatic.com)" crossorigin>
-    <link href="[https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;500;700&display=swap](https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;500;700&display=swap)" rel="stylesheet">
-    <link rel="stylesheet" href="[https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200](https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200)" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
 
     <!-- Material Web Components (M3) -->
-    <script type="module" src="[https://esm.run/@material/web/all.js](https://esm.run/@material/web/all.js)"></script>
-    <!-- Tailwind CSS for utility classes -->
-    <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>
-
+    <script type="module" src="https://esm.run/@material/web/all.js"></script>
+    
     <style>
+        /* M3 Light Theme Color Palette */
         :root {
             --md-sys-color-primary: #6750A4;
             --md-sys-color-on-primary: #FFFFFF;
@@ -30,58 +29,68 @@
             --md-ref-typeface-brand: 'Comfortaa', sans-serif;
             --md-ref-typeface-plain: 'Comfortaa', sans-serif;
         }
+
+        /* Base Styles */
         body {
             font-family: var(--md-ref-typeface-plain);
             background-color: var(--md-sys-color-surface-container-low);
             color: var(--md-sys-color-on-surface);
             margin: 0;
             padding: 16px;
+            box-sizing: border-box;
         }
-        .container { max-width: 800px; margin: 0 auto; }
+        .hidden { display: none !important; }
+
+        /* Layout Containers */
+        .container { max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
         .card {
             background-color: var(--md-sys-color-surface-container);
             border-radius: 28px;
             padding: 24px;
             border: 1px solid var(--md-sys-color-outline-variant, #CAC4D0);
         }
+
+        /* Header Styles */
+        #displayView { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
         #repoTitle {
-            font-size: 1.75rem;
-            line-height: 2.25rem;
-            font-weight: 700;
+            font-size: 1.75rem; line-height: 2.25rem; font-weight: 700;
             color: var(--md-sys-color-primary);
+            word-break: break-all;
         }
+        #editView { display: flex; flex-direction: column; gap: 16px; }
+        .input-row { display: flex; flex-direction: column; md-filled-text-field { flex-grow: 1; } }
+        @media (min-width: 640px) {
+            .input-row { flex-direction: row; gap: 16px; }
+        }
+        
+        /* Breadcrumbs */
         #breadcrumbs { display: flex; align-items: center; gap: 4px; margin-bottom: 16px; flex-wrap: wrap; }
         .breadcrumb-link { color: var(--md-sys-color-primary); cursor: pointer; font-weight: 500; border-radius: 8px; padding: 4px 8px; }
         .breadcrumb-link:hover { background-color: var(--md-sys-color-primary-container); }
         .breadcrumb-separator { color: var(--md-sys-color-on-surface-variant); }
         
+        /* File List */
         md-list-item {
             --md-list-item-label-text-color: #000000;
             --md-list-item-label-text-font: var(--md-ref-typeface-plain);
         }
         md-list-item::part(start) { color: var(--md-sys-color-primary); }
 
+        /* Message Center (Loading/Error) */
         #messageCenter { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 200px; color: var(--md-sys-color-on-surface-variant); }
         #messageCenter p { margin-top: 16px; font-weight: 500; }
         
-        #media-viewer {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0, 0, 0, 0.85);
-            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-            display: flex; align-items: center; justify-content: center;
-            z-index: 1000; opacity: 0; visibility: hidden;
-            transition: opacity 0.3s, visibility 0.3s;
-        }
-        #media-viewer.visible { opacity: 1; visibility: visible; }
+        /* Media Viewer Modal */
+        #media-viewer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.85); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); display: none; align-items: center; justify-content: center; z-index: 1000; }
+        #media-viewer.visible { display: flex; }
         #media-viewer img, #media-viewer video { max-width: 90%; max-height: 90%; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         #close-viewer { position: absolute; top: 20px; right: 20px; cursor: pointer; color: white; font-size: 2rem; }
     </style>
 </head>
 <body>
-
     <div class="container">
-        <header class="card mb-4">
-            <div id="displayView" class="flex items-center justify-between">
+        <header class="card">
+            <div id="displayView">
                 <div>
                     <span class="text-sm" style="color: var(--md-sys-color-on-surface-variant);">Current Repository</span>
                     <h2 id="repoTitle">Detecting...</h2>
@@ -89,20 +98,18 @@
                 <md-filled-tonal-button id="changeRepoBtn">Change</md-filled-tonal-button>
             </div>
             <div id="editView" class="hidden">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-                    <md-filled-text-field id="userInput" label="GitHub User or Org" class="w-full"></md-filled-text-field>
-                    <md-filled-text-field id="repoInput" label="Repository Name" class="w-full"></md-filled-text-field>
-                    <md-filled-button id="saveRepoBtn" class="w-full md:w-auto justify-self-end">Save & Load</md-filled-button>
+                <div class="input-row">
+                    <md-filled-text-field id="userInput" label="GitHub User or Org"></md-filled-text-field>
+                    <md-filled-text-field id="repoInput" label="Repository Name"></md-filled-text-field>
                 </div>
+                <md-filled-button id="saveRepoBtn">Save & Load</md-filled-button>
             </div>
         </header>
 
         <main class="card">
              <div id="breadcrumbs"></div>
              <div id="fileListContainer">
-                <div id="messageCenter">
-                    <!-- Initial message will be set by JS -->
-                </div>
+                <div id="messageCenter"></div>
                 <md-list id="fileList"></md-list>
              </div>
         </main>
@@ -166,7 +173,7 @@
         const loadRepo = async (user, repo, path = '') => {
             fileList.innerHTML = '';
             messageCenter.innerHTML = `<md-circular-progress indeterminate></md-circular-progress><p>Loading Files...</p>`;
-            messageCenter.style.display = 'flex';
+            messageCenter.classList.remove('hidden');
             breadcrumbs.innerHTML = '';
 
             try {
@@ -174,7 +181,7 @@
                 if (!response.ok) throw new Error(`Repo not found or private (Status: ${response.status}).`);
                 const data = await response.json();
                 
-                messageCenter.style.display = 'none';
+                messageCenter.classList.add('hidden');
                 renderBreadcrumbs(user, repo, path);
                 
                 data.sort((a, b) => {
@@ -185,7 +192,7 @@
 
                 if (data.length === 0) {
                      messageCenter.innerHTML = `<p>This directory is empty.</p>`;
-                     messageCenter.style.display = 'flex';
+                     messageCenter.classList.remove('hidden');
                 }
 
                 data.forEach(item => {
@@ -247,13 +254,13 @@
         };
 
         const showEditView = () => {
-            displayView.style.display = 'none';
+            displayView.classList.add('hidden');
             editView.classList.remove('hidden');
         };
 
         const showDisplayView = () => {
             editView.classList.add('hidden');
-            displayView.style.display = 'flex';
+            displayView.classList.remove('hidden');
         };
 
         changeRepoBtn.addEventListener('click', showEditView);
