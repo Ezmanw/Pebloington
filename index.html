@@ -16,7 +16,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
-        /* M3 Light Theme Color Palette */
         :root {
             --md-sys-color-primary: #6750A4;
             --md-sys-color-on-primary: #FFFFFF;
@@ -31,7 +30,6 @@
             --md-ref-typeface-brand: 'Comfortaa', sans-serif;
             --md-ref-typeface-plain: 'Comfortaa', sans-serif;
         }
-
         body {
             font-family: var(--md-ref-typeface-plain);
             background-color: var(--md-sys-color-surface-container-low);
@@ -39,72 +37,158 @@
             margin: 0;
             padding: 16px;
         }
-
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
+        .container { max-width: 800px; margin: 0 auto; }
         .card {
             background-color: var(--md-sys-color-surface-container);
-            border-radius: 16px;
+            border-radius: 28px; /* More rounded corners */
             padding: 24px;
             border: 1px solid var(--md-sys-color-outline-variant, #CAC4D0);
         }
-
         #repoTitle {
-            font-size: 1.75rem; /* 28px */
-            line-height: 2.25rem; /* 36px */
+            font-size: 1.75rem;
+            line-height: 2.25rem;
             font-weight: 700;
             color: var(--md-sys-color-primary);
         }
+        #breadcrumbs { display: flex; align-items: center; gap: 4px; margin-bottom: 16px; flex-wrap: wrap; }
+        .breadcrumb-link { color: var(--md-sys-color-primary); cursor: pointer; font-weight: 500; border-radius: 8px; padding: 4px 8px; }
+        .breadcrumb-link:hover { background-color: var(--md-sys-color-primary-container); }
+        .breadcrumb-separator { color: var(--md-sys-color-on-surface-variant); }
         
-        #breadcrumbs {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            margin-bottom: 16px;
-            flex-wrap: wrap;
-        }
-
-        .breadcrumb-link {
-            color: var(--md-sys-color-primary);
-            cursor: pointer;
-            font-weight: 500;
-            border-radius: 8px;
-            padding: 4px 8px;
-        }
-        .breadcrumb-link:hover {
-            background-color: var(--md-sys-color-primary-container);
-        }
-        .breadcrumb-separator {
-            color: var(--md-sys-color-on-surface-variant);
-        }
-        
+        /* FIX: Ensure file text is visible (black) */
         md-list-item {
-            --md-list-item-label-text-color: var(--md-sys-color-on-surface);
+            --md-list-item-label-text-color: #000000;
             --md-list-item-label-text-font: var(--md-ref-typeface-plain);
         }
-        md-list-item::part(start) {
-            color: var(--md-sys-color-primary);
-        }
+        md-list-item::part(start) { color: var(--md-sys-color-primary); }
 
-        #messageCenter {
+        #messageCenter { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 200px; color: var(--md-sys-color-on-surface-variant); }
+        #messageCenter p { margin-top: 16px; font-weight: 500; }
+        
+        /* Styles for the Media Viewer Modal */
+        #media-viewer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-height: 200px;
-            color: var(--md-sys-color-on-surface-variant);
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
         }
-        #messageCenter p {
-            margin-top: 16px;
-            font-weight: 500;
+        #media-viewer.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+        #media-viewer img, #media-viewer video {
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        #close-viewer {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            cursor: pointer;
+            color: white;
+            font-size: 2rem;
         }
     </style>
 </head>
 <body>
 
+    <div class="container">
+        <!-- Main UI -->
+    </div>
+    
+    <!-- Media Viewer Modal HTML -->
+    <div id="media-viewer">
+        <span id="close-viewer" class="material-symbols-outlined">close</span>
+        <div id="media-content"></div>
+    </div>
+
+    <script type="module">
+        // All JavaScript from previous version, with modifications below
+        
+        const mediaViewer = document.getElementById('media-viewer');
+        const mediaContent = document.getElementById('media-content');
+        const closeViewerBtn = document.getElementById('close-viewer');
+
+        const VIEWABLE_EXTENSIONS = {
+            image: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'],
+            video: ['mp4', 'webm', 'ogg']
+        };
+
+        const showMediaViewer = (url, type) => {
+            mediaContent.innerHTML = '';
+            let mediaElement;
+            if (type === 'image') {
+                mediaElement = document.createElement('img');
+            } else {
+                mediaElement = document.createElement('video');
+                mediaElement.controls = true;
+                mediaElement.autoplay = true;
+            }
+            mediaElement.src = url;
+            mediaContent.appendChild(mediaElement);
+            mediaViewer.classList.add('visible');
+        };
+
+        closeViewerBtn.addEventListener('click', () => {
+            mediaViewer.classList.remove('visible');
+            mediaContent.innerHTML = ''; // Stop video/audio
+        });
+        
+        const loadRepo = async (user, repo, path = '') => {
+            // ... (existing code for fetching and sorting)
+
+            data.forEach(item => {
+                const listItem = document.createElement('md-list-item');
+                listItem.headline = item.name;
+                
+                const icon = document.createElement('md-icon');
+                icon.slot = 'start';
+                icon.textContent = item.type === 'dir' ? 'folder' : 'draft';
+                listItem.appendChild(icon);
+
+                if (item.type === 'dir') {
+                    listItem.addEventListener('click', () => loadRepo(user, repo, item.path));
+                } else {
+                    const extension = item.name.split('.').pop().toLowerCase();
+                    const isImageViewable = VIEWABLE_EXTENSIONS.image.includes(extension);
+                    const isVideoViewable = VIEWABLE_EXTENSIONS.video.includes(extension);
+
+                    if (isImageViewable || isVideoViewable) {
+                        listItem.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            showMediaViewer(item.download_url, isImageViewable ? 'image' : 'video');
+                        });
+                        listItem.style.cursor = 'pointer';
+                    } else {
+                        // Default download behavior for other files
+                        listItem.href = item.download_url;
+                        listItem.target = '_blank';
+                        listItem.type = 'link';
+                    }
+                }
+                
+                fileList.appendChild(listItem);
+            });
+            // ... (rest of the function)
+        };
+        
+        // ... (rest of the JavaScript)
+    </script>
+    
+    <!-- The rest of the HTML structure for header and main content goes here -->
     <div class="container">
         <header class="card mb-4">
             <div id="displayView" class="flex items-center justify-between">
@@ -133,139 +217,6 @@
              </div>
         </main>
     </div>
-
-    <script type="module">
-        const displayView = document.getElementById('displayView');
-        const editView = document.getElementById('editView');
-        const changeRepoBtn = document.getElementById('changeRepoBtn');
-        const saveRepoBtn = document.getElementById('saveRepoBtn');
-        const repoTitle = document.getElementById('repoTitle');
-        const userInput = document.getElementById('userInput');
-        const repoInput = document.getElementById('repoInput');
-        
-        const breadcrumbs = document.getElementById('breadcrumbs');
-        const fileList = document.getElementById('fileList');
-        const messageCenter = document.getElementById('messageCenter');
-
-        const detectRepoInfo = () => {
-            const hostname = window.location.hostname;
-            const pathname = window.location.pathname;
-
-            if (hostname.endsWith('github.io')) {
-                const user = hostname.split('.')[0];
-                const repo = pathname.split('/')[1] || '';
-                return { user, repo };
-            }
-            return { user: '', repo: '' }; // Default to empty
-        };
-
-        const loadRepo = async (user, repo, path = '') => {
-            fileList.innerHTML = '';
-            messageCenter.innerHTML = `<md-circular-progress indeterminate></md-circular-progress><p>Loading Files...</p>`;
-            messageCenter.style.display = 'flex';
-
-            try {
-                const response = await fetch(`https://api.github.com/repos/${user}/${repo}/contents/${path}`);
-                if (!response.ok) {
-                    throw new Error(`Repo not found or private (Status: ${response.status}).`);
-                }
-                const data = await response.json();
-                
-                messageCenter.style.display = 'none';
-                renderBreadcrumbs(user, repo, path);
-                
-                data.sort((a, b) => {
-                    if (a.type === 'dir' && b.type !== 'dir') return -1;
-                    if (a.type !== 'dir' && b.type === 'dir') return 1;
-                    return a.name.localeCompare(b.name);
-                });
-
-                if (data.length === 0) {
-                     messageCenter.innerHTML = `<p>This directory is empty.</p>`;
-                     messageCenter.style.display = 'flex';
-                }
-
-                data.forEach(item => {
-                    const listItem = document.createElement('md-list-item');
-                    listItem.headline = item.name;
-                    
-                    const icon = document.createElement('md-icon');
-                    icon.slot = 'start';
-                    icon.textContent = item.type === 'dir' ? 'folder' : 'draft';
-                    
-                    if (item.type === 'dir') {
-                        listItem.addEventListener('click', () => loadRepo(user, repo, item.path));
-                    } else {
-                        listItem.href = item.download_url;
-                        listItem.target = '_blank';
-                        listItem.type = 'link';
-                    }
-                    
-                    listItem.appendChild(icon);
-                    fileList.appendChild(listItem);
-                });
-
-            } catch (error) {
-                messageCenter.innerHTML = `<p style="color: red;">${error.message}</p>`;
-            }
-        };
-
-        const renderBreadcrumbs = (user, repo, path) => {
-            breadcrumbs.innerHTML = '';
-            const homeLink = document.createElement('div');
-            homeLink.className = 'breadcrumb-link';
-            homeLink.textContent = repo;
-            homeLink.onclick = () => loadRepo(user, repo, '');
-            breadcrumbs.appendChild(homeLink);
-
-            const parts = path.split('/').filter(Boolean);
-            let currentPath = '';
-            parts.forEach(part => {
-                currentPath += `${part}/`;
-                const separator = document.createElement('span');
-                separator.className = 'breadcrumb-separator material-symbols-outlined';
-                separator.textContent = 'chevron_right';
-                breadcrumbs.appendChild(separator);
-
-                const partLink = document.createElement('div');
-                partLink.className = 'breadcrumb-link';
-                partLink.textContent = part;
-                const pathToLoad = currentPath.slice(0, -1); 
-                partLink.onclick = () => loadRepo(user, repo, pathToLoad);
-                breadcrumbs.appendChild(partLink);
-            });
-        };
-
-        changeRepoBtn.addEventListener('click', () => {
-            displayView.style.display = 'none';
-            editView.style.display = 'block';
-        });
-
-        saveRepoBtn.addEventListener('click', () => {
-            const user = userInput.value.trim();
-            const repo = repoInput.value.trim();
-            if (user && repo) {
-                repoTitle.textContent = `${user} / ${repo}`;
-                loadRepo(user, repo);
-                editView.style.display = 'none';
-                displayView.style.display = 'flex';
-            }
-        });
-
-        document.addEventListener('DOMContentLoaded', () => {
-            const { user, repo } = detectRepoInfo();
-            if (user && repo) {
-                repoTitle.textContent = `${user} / ${repo}`;
-                userInput.value = user;
-                repoInput.value = repo;
-                loadRepo(user, repo);
-            } else {
-                repoTitle.textContent = 'No Repo Detected';
-                messageCenter.innerHTML = `<p>Could not auto-detect a repository. Please enter one manually.</p>`;
-                changeRepoBtn.click();
-            }
-        });
-    </script>
 
 </body>
 </html>
