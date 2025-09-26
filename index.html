@@ -12,25 +12,58 @@
     <script type="module" src="https://esm.run/@material/web/all.js"></script>
     
     <style>
+        :root {
+            --background: #121212;
+            --surface: #1E1E1E;
+            --on-surface: #E0E0E0;
+            --primary: #66BB6A; /* Material Green */
+            --outline: #424242;
+        }
+
         body {
             font-family: 'Comfortaa', sans-serif;
-            background-color: #F7F2FA;
-            color: #1C1B1F;
+            background-color: var(--background);
+            color: var(--on-surface);
             margin: 0;
             padding: 16px;
             box-sizing: border-box;
         }
+
         .hidden { display: none !important; }
         .container { max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
-        .card { background-color: #F3EDF7; border-radius: 28px; padding: 24px; border: 1px solid #CAC4D0; }
-        #repoTitle { font-size: 1.75rem; line-height: 2.25rem; font-weight: 700; color: #6750A4; word-break: break-all; }
+        .card { background-color: var(--surface); border-radius: 28px; padding: 24px; border: 1px solid var(--outline); }
+        
+        #repoTitle { font-size: 1.75rem; line-height: 2.25rem; font-weight: 700; color: var(--primary); word-break: break-all; }
+        
         #breadcrumbs { display: flex; align-items: center; gap: 4px; margin-bottom: 16px; flex-wrap: wrap; }
-        .breadcrumb-link { color: #6750A4; cursor: pointer; font-weight: 500; border-radius: 8px; padding: 4px 8px; text-decoration: none; }
-        .breadcrumb-link:hover { background-color: #EADDFF; }
-        .breadcrumb-separator { color: #49454F; }
-        md-list-item { --md-list-item-label-text-color: #000000; --md-list-item-label-text-font: 'Comfortaa', sans-serif; }
-        md-list-item::part(start) { color: #6750A4; }
-        #messageCenter { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 200px; color: #49454F; }
+        .breadcrumb-link { color: var(--primary); cursor: pointer; font-weight: 500; border-radius: 8px; padding: 4px 8px; text-decoration: none; }
+        .breadcrumb-link:hover { background-color: rgba(102, 187, 106, 0.1); }
+        .breadcrumb-separator { color: var(--on-surface); }
+        
+        /* --- CRITICAL FIXES --- */
+        md-list-item {
+            --md-list-item-label-text-color: var(--on-surface);
+            --md-list-item-hover-label-text-color: var(--on-surface);
+            --md-list-item-focus-label-text-color: var(--on-surface);
+            --md-list-item-label-text-font: 'Comfortaa', sans-serif;
+        }
+        md-list-item::part(start) { color: var(--primary); }
+
+        md-filled-tonal-button, md-filled-button {
+            --md-sys-color-primary: var(--primary);
+            --md-sys-color-on-primary: var(--background);
+            /* This is the key to fixing the button font */
+            --md-filled-button-label-text-font: 'Comfortaa', sans-serif;
+            --md-filled-tonal-button-label-text-font: 'Comfortaa', sans-serif;
+        }
+        md-filled-text-field {
+            --md-sys-color-primary: var(--primary);
+            --md-sys-color-on-surface: var(--on-surface);
+            --md-sys-color-surface-container-highest: var(--surface);
+            --md-sys-color-outline: var(--outline);
+        }
+        
+        #messageCenter { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 200px; color: var(--on-surface); }
         #messageCenter p { margin-top: 16px; font-weight: 500; }
         #displayView { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
         #editView { display: flex; flex-direction: column; gap: 16px; }
@@ -44,7 +77,7 @@
         <header class="card">
             <div id="displayView">
                 <div>
-                    <span style="color: #49454F;">Current Repository</span>
+                    <span style="color: #9E9E9E;">Current Repository</span>
                     <h2 id="repoTitle">Detecting...</h2>
                 </div>
                 <md-filled-tonal-button id="changeRepoBtn">Change</md-filled-tonal-button>
@@ -91,7 +124,7 @@
 
         const loadRepo = async (user, repo, path = '') => {
             fileList.innerHTML = '';
-            messageCenter.innerHTML = `<md-circular-progress indeterminate></md-circular-progress><p>Loading Files...</p>`;
+            messageCenter.innerHTML = `<md-circular-progress indeterminate style="--md-circular-progress-active-indicator-color: var(--primary);"></md-circular-progress><p>Loading Files...</p>`;
             messageCenter.classList.remove('hidden');
             breadcrumbs.innerHTML = '';
 
@@ -126,15 +159,14 @@
                         listItem.type = 'button';
                         listItem.addEventListener('click', () => loadRepo(user, repo, item.path));
                     } else {
-                        // THIS IS THE FIX: All files link directly to their download_url
                         listItem.type = 'link';
                         listItem.href = item.download_url;
-                        listItem.target = '_blank'; // Open in a new tab
+                        listItem.target = '_blank';
                     }
                     fileList.appendChild(listItem);
                 });
             } catch (error) {
-                messageCenter.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+                messageCenter.innerHTML = `<p style="color: #EF5350;">Error: ${error.message}</p>`;
             }
         };
 
