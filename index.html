@@ -18,9 +18,9 @@
             --on-surface: #E0E0E0;
             --primary: #4CAF50; /* Deeper Green */
             --outline: #424242;
+            --hover-bg: rgba(76, 175, 80, 0.1);
         }
 
-        /* --- LAYOUT FIX: Vertically center the content --- */
         body {
             font-family: 'Comfortaa', sans-serif;
             background-color: var(--background);
@@ -36,13 +36,9 @@
 
         .main-container { width: 100%; max-width: 800px; display: flex; flex-direction: column; gap: 16px; }
 
-        /* --- CRITICAL FIX FOR FLASH --- */
         body.viewer-mode .main-container { display: none !important; }
-        
         body.viewer-mode {
-            min-height: 0;
-            padding: 0;
-            display: flex; align-items: center; justify-content: center;
+            min-height: 0; padding: 0; display: flex; align-items: center; justify-content: center;
             background-color: #111; overflow: hidden;
         }
         .fullscreen-media { max-width: 100%; max-height: 100%; }
@@ -52,23 +48,38 @@
         #repoTitle { font-size: 1.75rem; line-height: 2.25rem; font-weight: 700; color: var(--primary); word-break: break-all; }
         #breadcrumbs { display: flex; align-items: center; gap: 4px; margin-bottom: 16px; flex-wrap: wrap; }
         .breadcrumb-link { color: var(--primary); cursor: pointer; font-weight: 500; border-radius: 8px; padding: 4px 8px; text-decoration: none; }
-        .breadcrumb-link:hover { background-color: rgba(76, 175, 80, 0.1); }
+        .breadcrumb-link:hover { background-color: var(--hover-bg); }
         .breadcrumb-separator { color: var(--on-surface); }
 
-        /* --- CRITICAL VISIBILITY FIXES --- */
-        md-list {
-            /* This removes the white background from the list component itself */
-            --md-list-container-color: transparent;
-            background-color: transparent;
+        /* --- NEW CUSTOM FILE LIST STYLES --- */
+        #fileList {
+            display: flex;
+            flex-direction: column;
         }
-        md-list-item {
-            --md-list-item-label-text-color: var(--on-surface);
-            --md-list-item-hover-label-text-color: var(--on-surface);
-            --md-list-item-focus-label-text-color: var(--on-surface);
-            --md-list-item-label-text-font: 'Comfortaa', sans-serif;
+        .file-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 12px 8px;
+            border-radius: 12px;
+            text-decoration: none;
+            color: var(--on-surface);
+            cursor: pointer;
         }
-        md-list-item::part(start) { color: var(--primary); }
+        .file-item:hover {
+            background-color: var(--hover-bg);
+        }
+        .file-item .material-symbols-outlined {
+            color: var(--primary);
+            font-size: 24px;
+        }
+        .file-item span {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
 
+        /* Material Component Theming */
         md-filled-tonal-button, md-filled-button {
             --md-sys-color-primary: var(--primary);
             --md-sys-color-on-primary: var(--background);
@@ -98,11 +109,7 @@
 </head>
 <body>
     <script>
-        try {
-            if (new URLSearchParams(window.location.search).has('view')) {
-                document.body.classList.add('viewer-mode');
-            }
-        } catch (e) { /* Failsafe */ }
+        try { if (new URLSearchParams(window.location.search).has('view')) { document.body.classList.add('viewer-mode'); } } catch (e) {}
     </script>
 
     <div class="main-container">
@@ -127,7 +134,8 @@
                  <div id="breadcrumbs"></div>
                  <div id="fileListContainer">
                     <div id="messageCenter"></div>
-                    <md-list id="fileList"></md-list>
+                    <!-- The new file list is just a simple div -->
+                    <div id="fileList"></div>
                  </div>
             </main>
         </div>
@@ -169,10 +177,7 @@
             const fileList = document.getElementById('fileList');
             const messageCenter = document.getElementById('messageCenter');
 
-            const VIEWABLE_EXTENSIONS = {
-                image: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'],
-                video: ['mp4', 'webm', 'ogg']
-            };
+            const VIEWABLE_EXTENSIONS = { image: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'], video: ['mp4', 'webm', 'ogg'] };
 
             const detectRepoInfo = () => {
                 const hostname = window.location.hostname;
@@ -210,19 +215,29 @@
                          messageCenter.classList.remove('hidden');
                     }
 
+                    // --- JAVASCRIPT LOGIC UPDATED FOR NEW LIST ---
                     data.forEach(item => {
-                        const listItem = document.createElement('md-list-item');
-                        listItem.headline = item.name;
-                        const icon = document.createElement('md-icon');
-                        icon.slot = 'start';
+                        const listItem = document.createElement('a'); // Use <a> for all items
+                        listItem.className = 'file-item';
+
+                        const icon = document.createElement('span');
+                        icon.className = 'material-symbols-outlined';
                         icon.textContent = item.type === 'dir' ? 'folder' : 'draft';
+                        
+                        const text = document.createElement('span');
+                        text.textContent = item.name;
+                        
                         listItem.appendChild(icon);
+                        listItem.appendChild(text);
 
                         if (item.type === 'dir') {
-                            listItem.type = 'button';
-                            listItem.addEventListener('click', () => loadRepo(user, repo, item.path));
+                            listItem.href = '#'; // Make it behave like a link
+                            listItem.addEventListener('click', (e) => {
+                                e.preventDefault(); // Prevent hash change
+                                loadRepo(user, repo, item.path);
+                            });
                         } else {
-                            listItem.type = 'link';
+                            listItem.target = '_blank';
                             const extension = item.name.split('.').pop().toLowerCase();
                             const isImageViewable = VIEWABLE_EXTENSIONS.image.includes(extension);
                             const isVideoViewable = VIEWABLE_EXTENSIONS.video.includes(extension);
@@ -236,7 +251,6 @@
                             } else {
                                 listItem.href = item.download_url;
                             }
-                            listItem.target = '_blank';
                         }
                         fileList.appendChild(listItem);
                     });
