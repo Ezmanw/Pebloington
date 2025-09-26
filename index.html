@@ -12,8 +12,8 @@
     <script type="module" src="https://esm.run/@material/web/all.js"></script>
     
     <style>
-        /* This style block is for the main explorer UI */
-        body:not(.viewer-mode) {
+        /* Base styles for the explorer UI */
+        body {
             font-family: 'Comfortaa', sans-serif;
             background-color: #F7F2FA;
             color: #1C1B1F;
@@ -21,8 +21,33 @@
             padding: 16px;
             box-sizing: border-box;
         }
+        .main-container { max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+
+        /* --- CRITICAL FIX FOR FLASH --- */
+        /* If body has .viewer-mode, IMMEDIATELY hide the explorer content */
+        body.viewer-mode .main-container {
+            display: none !important;
+        }
+        
+        /* Styles ONLY for the clean media viewer page */
+        body.viewer-mode {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #111;
+            overflow: hidden;
+        }
+        .fullscreen-media {
+            max-width: 100%;
+            max-height: 100%;
+        }
+        
+        /* Other explorer styles */
         .hidden { display: none !important; }
-        .container { max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
         .card { background-color: #F3EDF7; border-radius: 28px; padding: 24px; border: 1px solid #CAC4D0; }
         #repoTitle { font-size: 1.75rem; line-height: 2.25rem; font-weight: 700; color: #6750A4; word-break: break-all; }
         #breadcrumbs { display: flex; align-items: center; gap: 4px; margin-bottom: 16px; flex-wrap: wrap; }
@@ -38,29 +63,22 @@
         .input-row { display: flex; flex-direction: column; }
         @media (min-width: 640px) { .input-row { flex-direction: row; gap: 16px; } }
         .input-row md-filled-text-field { flex-grow: 1; }
-        
-        /* This style block is ONLY for the clean media viewer page */
-        body.viewer-mode {
-            margin: 0;
-            padding: 0;
-            height: 100vh;
-            width: 100vw;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background-color: #111;
-            overflow: hidden;
-        }
-        .viewer-mode .main-container {
-            display: none;
-        }
-        .fullscreen-media {
-            max-width: 100%;
-            max-height: 100%;
-        }
     </style>
 </head>
 <body>
+
+    <!-- This tiny script runs BEFORE anything is rendered to prevent the UI flash -->
+    <script>
+        try {
+            const params = new URLSearchParams(window.location.search);
+            if (params.has('view')) {
+                document.body.classList.add('viewer-mode');
+            }
+        } catch (e) {
+            // Failsafe for older browsers
+        }
+    </script>
+
     <div class="main-container">
         <div class="container">
             <header class="card">
@@ -90,40 +108,38 @@
     </div>
 
     <script type="module">
-        const initViewerMode = () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const mediaUrl = urlParams.get('view');
-            const mediaType = urlParams.get('type');
+        // This function decides what the page should do.
+        const initializePage = () => {
+            // Check if the body has the viewer-mode class we added in the inline script.
+            if (document.body.classList.contains('viewer-mode')) {
+                const urlParams = new URLSearchParams(window.location.search);
+                const mediaUrl = urlParams.get('view');
+                const mediaType = urlParams.get('type');
 
-            if (mediaUrl) {
-                document.body.classList.add('viewer-mode');
-                const mainContainer = document.querySelector('.main-container');
-                if(mainContainer) mainContainer.style.display = 'none';
-
-                let mediaElement;
-                if (mediaType === 'image') {
-                    mediaElement = document.createElement('img');
-                } else {
-                    mediaElement = document.createElement('video');
-                    mediaElement.controls = true;
-                    mediaElement.autoplay = true;
+                if (mediaUrl) {
+                    let mediaElement;
+                    if (mediaType === 'image') {
+                        mediaElement = document.createElement('img');
+                    } else {
+                        mediaElement = document.createElement('video');
+                        mediaElement.controls = true;
+                        mediaElement.autoplay = true;
+                    }
+                    mediaElement.src = decodeURIComponent(mediaUrl);
+                    mediaElement.className = 'fullscreen-media';
+                    document.body.appendChild(mediaElement);
                 }
-                mediaElement.src = decodeURIComponent(mediaUrl);
-                mediaElement.className = 'fullscreen-media';
-                document.body.appendChild(mediaElement);
-                return true; 
+                // Stop here, don't initialize the explorer.
+                return; 
             }
-            return false;
+            
+            // If not in viewer mode, run the normal File Explorer Logic.
+            initializeExplorer();
         };
 
-        // Run viewer check immediately. If it returns true, we stop here.
-        if (initViewerMode()) {
-           // We are in viewer mode, no further script execution is needed for the explorer.
-        } else {
-            // --- Normal File Explorer Logic ---
+        const initializeExplorer = () => {
             const displayView = document.getElementById('displayView');
             const editView = document.getElementById('editView');
-            // ... (All other variable declarations for the explorer)
             const changeRepoBtn = document.getElementById('changeRepoBtn');
             const saveRepoBtn = document.getElementById('saveRepoBtn');
             const repoTitle = document.getElementById('repoTitle');
@@ -177,14 +193,14 @@
                     data.forEach(item => {
                         const listItem = document.createElement('md-list-item');
                         listItem.headline = item.name;
-                        listItem.type = 'link'; // Make all items links
+                        listItem.type = 'link'; 
                         const icon = document.createElement('md-icon');
                         icon.slot = 'start';
                         icon.textContent = item.type === 'dir' ? 'folder' : 'draft';
                         listItem.appendChild(icon);
 
                         if (item.type === 'dir') {
-                            listItem.href = 'javascript:void(0)'; // Prevent navigation
+                            listItem.href = 'javascript:void(0)';
                             listItem.addEventListener('click', (e) => {
                                 e.preventDefault();
                                 loadRepo(user, repo, item.path);
@@ -195,12 +211,13 @@
                             const isVideoViewable = VIEWABLE_EXTENSIONS.video.includes(extension);
 
                             if (isImageViewable || isVideoViewable) {
-                                // Link to the viewer page (the page itself with params)
                                 const mediaType = isImageViewable ? 'image' : 'video';
-                                listItem.href = `?view=${encodeURIComponent(item.download_url)}&type=${mediaType}`;
-                                listItem.target = '_blank'; // Open in new tab
+                                const viewerUrl = new URL(window.location);
+                                viewerUrl.searchParams.set('view', item.download_url);
+                                viewerUrl.searchParams.set('type', mediaType);
+                                listItem.href = viewerUrl.href;
+                                listItem.target = '_blank';
                             } else {
-                                // Default download behavior for other files
                                 listItem.href = item.download_url;
                                 listItem.target = '_blank';
                             }
@@ -275,6 +292,9 @@
                 }
             });
         }
+        
+        // Start the correct mode for the page.
+        initializePage();
     </script>
 </body>
 </html>
