@@ -4,14 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>M3 File Explorer</title>
-    <!-- Google Fonts and Material Symbols -->
+    <!-- Google Fonts (Comfortaa) and Material Symbols -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
 
     <!-- Material Web Components (M3) -->
     <script type="module" src="https://esm.run/@material/web/all.js"></script>
+    <!-- Tailwind CSS for utility classes -->
+    <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
         /* M3 Light Theme Color Palette */
@@ -26,8 +28,8 @@
             --md-sys-color-on-surface: #1C1B1F;
             --md-sys-color-on-surface-variant: #49454F;
             --md-sys-color-outline: #79747E;
-            --md-ref-typeface-brand: 'Roboto', sans-serif;
-            --md-ref-typeface-plain: 'Roboto', sans-serif;
+            --md-ref-typeface-brand: 'Comfortaa', sans-serif;
+            --md-ref-typeface-plain: 'Comfortaa', sans-serif;
         }
 
         body {
@@ -43,17 +45,16 @@
             margin: 0 auto;
         }
 
-        /* Custom styles for layout */
         .card {
             background-color: var(--md-sys-color-surface-container);
             border-radius: 16px;
-            padding: 16px;
+            padding: 24px;
             border: 1px solid var(--md-sys-color-outline-variant, #CAC4D0);
         }
 
         #repoTitle {
-            font-size: 1.5rem; /* 24px */
-            line-height: 2rem; /* 32px */
+            font-size: 1.75rem; /* 28px */
+            line-height: 2.25rem; /* 36px */
             font-weight: 700;
             color: var(--md-sys-color-primary);
         }
@@ -80,9 +81,9 @@
             color: var(--md-sys-color-on-surface-variant);
         }
         
-        /* Style the material list items */
         md-list-item {
             --md-list-item-label-text-color: var(--md-sys-color-on-surface);
+            --md-list-item-label-text-font: var(--md-ref-typeface-plain);
         }
         md-list-item::part(start) {
             color: var(--md-sys-color-primary);
@@ -113,10 +114,12 @@
                 </div>
                 <md-filled-tonal-button id="changeRepoBtn">Change</md-filled-tonal-button>
             </div>
-            <div id="editView" class="hidden flex flex-col gap-4">
-                <md-filled-text-field id="userInput" label="GitHub User or Org" class="w-full"></md-filled-text-field>
-                <md-filled-text-field id="repoInput" label="Repository Name" class="w-full"></md-filled-text-field>
-                <md-filled-button id="saveRepoBtn" class="self-end">Save & Load</md-filled-button>
+            <div id="editView" class="hidden">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                    <md-filled-text-field id="userInput" label="GitHub User or Org" class="w-full"></md-filled-text-field>
+                    <md-filled-text-field id="repoInput" label="Repository Name" class="w-full"></md-filled-text-field>
+                    <md-filled-button id="saveRepoBtn" class="w-full md:w-auto justify-self-end">Save & Load</md-filled-button>
+                </div>
             </div>
         </header>
 
@@ -188,12 +191,11 @@
                     
                     const icon = document.createElement('md-icon');
                     icon.slot = 'start';
+                    icon.textContent = item.type === 'dir' ? 'folder' : 'draft';
                     
                     if (item.type === 'dir') {
-                        icon.textContent = 'folder';
                         listItem.addEventListener('click', () => loadRepo(user, repo, item.path));
                     } else {
-                        icon.textContent = 'draft'; // Material symbol for a file
                         listItem.href = item.download_url;
                         listItem.target = '_blank';
                         listItem.type = 'link';
@@ -236,7 +238,7 @@
 
         changeRepoBtn.addEventListener('click', () => {
             displayView.style.display = 'none';
-            editView.style.display = 'flex';
+            editView.style.display = 'block';
         });
 
         saveRepoBtn.addEventListener('click', () => {
